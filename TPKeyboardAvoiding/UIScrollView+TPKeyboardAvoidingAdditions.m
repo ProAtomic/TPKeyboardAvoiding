@@ -293,11 +293,13 @@ static const int kStateKey;
 - (BOOL)TPKeyboardAvoiding_viewIsValidKeyViewCandidate:(UIView *)view {
     if ( [self TPKeyboardAvoiding_viewHiddenOrUserInteractionNotEnabled:view] ) return NO;
     
-    if ( [view isKindOfClass:[UITextField class]] && ((UITextField*)view).enabled ) {
+    Class class = [self getBaseParentClassOfClass:view.class];
+    
+    if ( [class isKindOfClass:[UITextField class]] && ((UITextField*)view).enabled ) {
         return YES;
     }
     
-    if ( [view isKindOfClass:[UITextView class]] && ((UITextView*)view).isEditable ) {
+    if ( [class isKindOfClass:[UITextView class]] && ((UITextView*)view).isEditable ) {
         return YES;
     }
     
@@ -306,12 +308,25 @@ static const int kStateKey;
 
 - (void)TPKeyboardAvoiding_assignTextDelegateForViewsBeneathView:(UIView*)view {
     for ( UIView *childView in view.subviews ) {
-        if ( ([childView isKindOfClass:[UITextField class]] || [childView isKindOfClass:[UITextView class]]) ) {
+        Class class = [self getBaseParentClassOfClass:childView.class];
+        if ( ([class isKindOfClass:[UITextField class]] || [class isKindOfClass:[UITextView class]]) ) {
             [self TPKeyboardAvoiding_initializeView:childView];
         } else {
             [self TPKeyboardAvoiding_assignTextDelegateForViewsBeneathView:childView];
         }
     }
+}
+
+- (Class)getBaseParentClassOfClass:(Class)class {
+    
+    Class parentClass = [class class];
+    if ([parentClass isKindOfClass:[UIControl class]] ) {
+        return class;
+    }else{
+        return [self getBaseParentClassOfClass:parentClass];
+    }
+    
+    return NULL;
 }
 
 -(CGSize)TPKeyboardAvoiding_calculatedContentSizeFromSubviewFrames {
@@ -422,7 +437,9 @@ static const int kStateKey;
 }
 
 - (void)TPKeyboardAvoiding_initializeView:(UIView*)view {
-    if ( [view isKindOfClass:[UITextField class]]
+    
+    Class class = [self getBaseParentClassOfClass:view.class];
+    if ( [class isKindOfClass:[UITextField class]]
             && (((UITextField*)view).returnKeyType == UIReturnKeyDefault || (((UITextField*)view).returnKeyType == UIReturnKeyNext))
             && (![(UITextField*)view delegate] || [(UITextField*)view delegate] == (id<UITextFieldDelegate>)self) ) {
         [(UITextField*)view setDelegate:(id<UITextFieldDelegate>)self];
